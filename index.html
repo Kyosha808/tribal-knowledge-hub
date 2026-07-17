@@ -364,15 +364,28 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
     try {
       rhome();
       updSB();
-      document.getElementById('lscr').classList.add('hidden');
+      // Always run the door animation so the app is never blocked
       document.getElementById('app').classList.remove('hidden');
       var nb = document.getElementById('notifBtn');
       if (nb) nb.style.display = 'flex';
-      updBell();
-      if (typeof rPNotifs === 'function') rPNotifs();
-      showP(savedPage || 'home');
-      startIdleTimer();
-      updBellFromDB();
+      setTimeout(function() {
+        var dL = document.getElementById('dL');
+        var dR = document.getElementById('dR');
+        if (dL) dL.classList.add('open');
+        if (dR) dR.classList.add('open');
+      }, 80);
+      setTimeout(function() {
+        document.getElementById('lscr').classList.add('hidden');
+        var dL = document.getElementById('dL');
+        var dR = document.getElementById('dR');
+        if (dL) dL.classList.add('hidden');
+        if (dR) dR.classList.add('hidden');
+        updBell();
+        if (typeof rPNotifs === 'function') rPNotifs();
+        showP(savedPage || 'home');
+        startIdleTimer();
+        updBellFromDB();
+      }, 1800);
     } catch(err) {
       console.warn('[TKH] showApp error:', err);
       showLoginScreen();
