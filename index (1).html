@@ -723,7 +723,7 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
     if (!mo) {
       mo = document.createElement('div');
       mo.id = 'mPrev'; mo.className = 'mo'; mo.style.zIndex = '9999';
-      mo.innerHTML = '<div class="mb" style="max-width:540px"><button class="mc2" onclick="closeM('mPrev')">&#x00D7;</button><div class="mh">Email Preview</div><div id="mPrevBody" style="padding:12px 0"></div></div>';
+      mo.innerHTML = '<div class="mb" style="max-width:540px"><button class="mc2" onclick="closeM(\'mPrev\')">&#x00D7;</button><div class="mh">Email Preview</div><div id="mPrevBody" style="padding:12px 0"></div></div>';
       document.body.appendChild(mo);
     }
     document.getElementById('mPrevBody').innerHTML =
