@@ -239,7 +239,7 @@
    <div class="ug"><label class="ul">Or Upload a File from your Computer</label><div class="fdr" onclick="document.getElementById('uFi').click()"><span style="font-size:22px;opacity:.4">&#x1F4C1;</span><p style="font-size:12px;color:rgba(242,232,213,.45);margin-top:5px"><strong style="color:var(--g)">Click to select</strong> or drag and drop</p><div class="fdn" id="uFN"></div></div><input type="file" id="uFi" style="display:none" accept="video/*,application/pdf,.doc,.docx,.ppt,.pptx" onchange="fSel(event)"></div>
    <div class="vnote" id="vNote">&#x1F4A1; <strong>For videos:</strong> Paste a Google Drive link set to "Anyone with the link can view", or use Loom/Vimeo/YouTube for best results. Local video files will play in the current session only.</div>
    <div id="atts"><button class="aab" onclick="addAtt('atts',UAtts)">+ Add Secondary Attachment</button></div>
-   <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end"><button class="bc" onclick="goBack()">Cancel</button><button class="gbtn" onclick="window.subUpload ? window.subUpload() : subUpload()">Upload</button></div>
+   <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end"><button class="bc" onclick="goBack()">Cancel</button><button class="gbtn" onclick="tkhUploadClick()">Upload</button></div>
   </div>
  </div></div>
 
@@ -927,6 +927,50 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
       lm('lOk', 'Password updated! Signing you in...');
       setTimeout(function() { window._tkhLoadAndLaunch(r.data.user, null); }, 1500);
     });
+  };
+
+
+  // DIRECT UPLOAD CLICK HANDLER — avoids DOMContentLoaded wrapper timing issues
+  window.tkhUploadClick = async function() {
+    try {
+      if (!window.SB || !CE) { toast('Upload unavailable. Refresh and sign in again.','error'); return; }
+      var tiEl=document.getElementById('uTi'), tyEl=document.getElementById('uTy'), deEl=document.getElementById('uDe'), urlEl=document.getElementById('uURL');
+      var ti=tiEl?tiEl.value.trim():'', ty=tyEl?tyEl.value:'', de=deEl?deEl.value.trim():'', rawUrl=urlEl?urlEl.value.trim():'';
+      var contentFile=window._selectedFile || (document.getElementById('uFi') && document.getElementById('uFi').files ? document.getElementById('uFi').files[0] : null);
+      if(!ti){toast('Title is required.','error');return;}
+      if(!ty){toast('Content type is required.','error');return;}
+      if(!de){toast('Description is required.','error');return;}
+      if(KWS.length<3){toast('Please add at least 3 keywords.','error');return;}
+      if(ty==='link'&&!rawUrl){toast('URL is required for Link uploads.','error');return;}
+      if((ty==='video'||ty==='document')&&!rawUrl&&!contentFile){toast('Choose a file or paste a URL for this content type.','error');return;}
+      var authRes=await window.SB.auth.getUser();
+      var authUser=authRes&&authRes.data?authRes.data.user:null;
+      if(!authUser){toast('Upload failed: signed-in user not found. Sign out and back in.','error');return;}
+      var creatorProfileId=team[CE]&&team[CE].sbId?team[CE].sbId:null;
+      if(!creatorProfileId){
+        var pr=await window.SB.from('profiles').select('id').eq('email',CE).single();
+        if(pr.error||!pr.data)throw new Error((pr.error&&pr.error.message)||'Creator profile not found.');
+        creatorProfileId=pr.data.id;if(!team[CE])team[CE]={};team[CE].sbId=creatorProfileId;
+      }
+      var fileUrl=rawUrl&&!rawUrl.startsWith('blob:')?rawUrl:'';
+      if(contentFile&&!fileUrl){
+        var safeName=contentFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+        var fpath='content/'+creatorProfileId+'/'+Date.now()+'-'+safeName;
+        var up=await window.SB.storage.from('tkh-uploads').upload(fpath,contentFile,{cacheControl:'3600',upsert:false,contentType:contentFile.type||'application/octet-stream'});
+        if(up.error)throw up.error;
+        var pub=window.SB.storage.from('tkh-uploads').getPublicUrl(fpath);
+        fileUrl=pub&&pub.data?pub.data.publicUrl:'';
+      }
+      var ins=await window.SB.from('content').insert({
+        creator_id:creatorProfileId,type:ty,title:ti,description:de,category:'General',keywords:KWS.slice(),file_url:fileUrl||rawUrl||'#',status:'live',view_count:0,helpful_count:0,shareable_slug:creatorProfileId.slice(0,8)+'-'+Date.now().toString(36)
+      }).select('*, cr:creator_id(email)').single();
+      if(ins.error)throw ins.error;
+      await window._tkhLoadData();
+      resetUploadForm();rhome();rpLists();toast('Content uploaded and saved.');goP('profile');
+    } catch(e) {
+      toast('Upload failed: '+((e&&e.message)?e.message:e),'error');
+      console.warn('[TKH] direct upload failed:', e);
+    }
   };
 
   console.log('[TKH] Supabase integration v2.0 loaded.');
