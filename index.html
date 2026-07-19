@@ -103,6 +103,14 @@
 .fsov{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.95);display:none;flex-direction:column}.fsov.open{display:flex}.fsc{padding:12px 20px;display:flex;justify-content:flex-end;gap:8px}.fsf{flex:1;width:100%;border:none}
 @media(max-width:860px){.dl{grid-template-columns:1fr}.psts{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.lcard{padding:26px 22px}.hero h1{font-size:28px}.csec,.page{padding-left:14px;padding-right:14px}.two,.pfr{grid-template-columns:1fr}}
+
+/* TKH Upload Overlay */
+#tkhUploadOverlay{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center}
+#tkhUploadOverlay.hidden{display:none!important}
+.tkhOverlayCard{background:rgba(8,4,1,.96);border:1px solid rgba(212,168,67,.3);border-radius:20px;padding:36px 40px;text-align:center;max-width:400px;width:90vw}
+@keyframes tkhSpin{to{transform:rotate(360deg)}}
+.tkhSpinner{width:44px;height:44px;border:3px solid rgba(212,168,67,.2);border-top-color:#d4a843;border-radius:50%;animation:tkhSpin .85s linear infinite;margin:0 auto 18px}
+.tkhOverlayMsg{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--pc);line-height:1.6}
 </style>
 </head>
 <body>
@@ -934,7 +942,14 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
 
 
   // DIRECT UPLOAD CLICK HANDLER — avoids DOMContentLoaded wrapper timing issues
-  // DIRECT UPLOAD CLICK HANDLER — do not modify unless explicitly requested
+  // ── FILE SIZE CONSTANTS ───────────────────────────────────────────────────
+  var TKH_MAX_FILE_SIZE_MB = 50;
+  var TKH_MAX_FILE_SIZE_BYTES = TKH_MAX_FILE_SIZE_MB * 1024 * 1024;
+
+  function tkhShowOverlay(){ var el=document.getElementById('tkhUploadOverlay'); if(el) el.classList.remove('hidden'); }
+  function tkhHideOverlay(){ var el=document.getElementById('tkhUploadOverlay'); if(el) el.classList.add('hidden'); }
+
+// DIRECT UPLOAD CLICK HANDLER — do not modify unless explicitly requested
 window.tkhUploadClick = async function () {
   var btn = document.querySelector('#pgUpload button[onclick="tkhUploadClick()"]');
   if (btn && btn.disabled) return;
@@ -981,6 +996,22 @@ window.tkhUploadClick = async function () {
         return;
       }
     }
+
+    // ── 50 MB file size guard (runs before any Supabase calls) ─────────────
+    if (contentFile && contentFile.size > TKH_MAX_FILE_SIZE_BYTES) {
+      window._selectedFile = null;
+      window._selectedThumb = null;
+      var uFiEl = document.getElementById('uFi');
+      if (uFiEl) { try { uFiEl.value = ''; } catch(e2) {} }
+      var uFNEl = document.getElementById('uFN');
+      if (uFNEl) uFNEl.textContent = '';
+      tkhHideOverlay();
+      openM('mLargeFile');
+      return;
+    }
+
+    // Show upload progress overlay now that file size is acceptable
+    tkhShowOverlay();
 
     // Find creator profile id (for Supabase content.creator_id)
     var creatorProfileId = team[CE] && team[CE].sbId ? team[CE].sbId : null;
@@ -1067,6 +1098,7 @@ window.tkhUploadClick = async function () {
     toast('Upload failed: ' + ((e && e.message) ? e.message : e), 'error');
     console.warn('[TKH] direct upload failed:', e);
   } finally {
+    tkhHideOverlay();
     if (btn) {
       btn.disabled = false;
       btn.textContent = 'Upload';
@@ -1078,6 +1110,54 @@ window.tkhUploadClick = async function () {
   console.log('[TKH] Supabase integration v2.0 loaded.');
 })();
 </script>
+
+
+<!-- TKH Upload Progress Overlay -->
+<div id="tkhUploadOverlay" class="hidden">
+  <div class="tkhOverlayCard">
+    <div class="tkhSpinner"></div>
+    <div class="tkhOverlayMsg"><strong style="color:var(--g2)">Uploading&hellip;</strong><br>This may take a minute.<br>Please don&rsquo;t close this page.</div>
+  </div>
+</div>
+
+<!-- TKH Large-File Popup -->
+<div class="mo hidden" id="mLargeFile">
+  <div class="mb" style="max-width:600px;max-height:85vh;overflow-y:auto">
+    <button class="mc2" onclick="closeM('mLargeFile')">&#x00D7;</button>
+    <div class="mh" style="color:rgba(220,80,80,.9)">Your video is too large for direct upload</div>
+    <div class="ms" style="text-align:left;line-height:1.7;font-size:13px">
+      <p>We can&rsquo;t upload this file directly because it exceeds our current <strong>50 MB limit</strong>. To add this video to Tribal Knowledge Hub, follow these steps:</p>
+      <br>
+      <p><strong>Step 1 &ndash; Open the TKH Uploads folder</strong><br>
+      Click <a href="https://drive.google.com/drive/folders/1ozyRZhzzjKmPWMkPqS01Wk-BE_igmOaU" target="_blank" style="color:var(--g2)">TKH Uploads folder</a> to open the shared Google Drive folder in a new tab.</p>
+      <br>
+      <p><strong>Step 2 &ndash; Upload your video to the folder</strong><br>
+      In the TKH Uploads folder:<br>
+      &bull; Click the <strong>New</strong> button in the top left corner of Google Drive.<br>
+      &bull; Choose <strong>File upload</strong>.<br>
+      &bull; Select your video file and wait for the upload to finish.<br>
+      <em>(Note: drag and drop is not supported for this workflow; please use New &rarr; File upload.)</em></p>
+      <br>
+      <p><strong>Step 3 &ndash; Get a shareable link</strong><br>
+      After the upload completes:<br>
+      &bull; Right-click your video file in the TKH Uploads folder.<br>
+      &bull; Click <strong>Share &rarr; Share</strong>.<br>
+      &bull; Under &ldquo;General access&rdquo;, choose <strong>Instacart</strong>.<br>
+      &bull; Click <strong>Copy link</strong>.</p>
+      <br>
+      <p><strong>Step 4 &ndash; Paste the link in TKH</strong><br>
+      Return to this TKH upload form:<br>
+      &bull; Paste the link into the <strong>URL field</strong>.<br>
+      &bull; Click <strong>Upload</strong> to save your content to TKH.</p>
+      <br>
+      <p style="color:rgba(212,168,67,.7);font-size:12px"><em>Note: We removed the oversized file you selected, but we kept your title, description, and keywords so you don&rsquo;t have to re-enter them.</em></p>
+    </div>
+    <div class="ma" style="flex-wrap:wrap;gap:10px;margin-top:18px">
+      <button class="gbtn" onclick="window.open('https://drive.google.com/drive/folders/1ozyRZhzzjKmPWMkPqS01Wk-BE_igmOaU','_blank')">Open TKH Uploads in new tab</button>
+      <button class="bc" onclick="closeM('mLargeFile')">Got it</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
