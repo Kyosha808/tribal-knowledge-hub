@@ -934,7 +934,8 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
 
 
   // DIRECT UPLOAD CLICK HANDLER — avoids DOMContentLoaded wrapper timing issues
-  window.tkhUploadClick = async function () {
+  // DIRECT UPLOAD CLICK HANDLER — do not modify unless explicitly requested
+window.tkhUploadClick = async function () {
   var btn = document.querySelector('#pgUpload button[onclick="tkhUploadClick()"]');
   if (btn && btn.disabled) return;
 
@@ -1028,7 +1029,7 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
       thumbUrl = tpub && tpub.data ? tpub.data.publicUrl : '';
     }
 
-    // Map type for DB (link rows can be stored as 'document' if that's what content_type_check expects)
+    // Map type for DB (link rows can be stored as 'document' if that’s what content_type_check expects)
     var dbType = (ty === 'link' ? 'document' : ty);
 
     var row = {
