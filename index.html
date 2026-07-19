@@ -233,7 +233,7 @@
   <div class="uform"><h2>Upload Content</h2><p>Share a tutorial, link, or document with the tribe</p>
    <div class="ug"><label class="ul">Title <span class="req">*</span></label><input class="ui" type="text" id="uTi" placeholder="Enter a descriptive title"></div>
    <div class="ug"><label class="ul">Content Type <span class="req">*</span></label><select class="ui uisel" id="uTy" onchange="uTypeChange()"><option value="">-- Select type --</option><option value="video">Tutorial / Video</option><option value="link">Link</option><option value="document">Document</option></select></div>
-   <div class="ug"><label class="ul">Description <span class="req">*</span> (max 250 chars)</label><textarea class="ui uita" id="uDe" maxlength="500" oninput="document.getElementById('uDc').textContent=this.value.length+'/500'" placeholder="Describe what this content covers..."></textarea><div class="cc" id="uDc">0/500</div></div>
+   <div class="ug"><label class="ul">Description <span class="req">*</span> (max 500 chars)</label><textarea class="ui uita" id="uDe" maxlength="500" oninput="document.getElementById('uDc').textContent=this.value.length+'/500'" placeholder="Describe what this content covers..."></textarea><div class="cc" id="uDc">0/500</div></div>
    <div class="ug"><label class="ul">Keywords <span class="req">*</span> (min 3, max 20)</label><div class="kwz" id="kwZ" onclick="document.getElementById('kwI').focus()"></div><input class="ui" type="text" id="kwI" placeholder="Type a keyword and press Enter" onkeydown="addKW(event)" style="margin-top:6px"><div class="kwn" id="kwN"></div></div>
    <div class="ug"><label class="ul">Thumbnail (optional &mdash; PNG or JPEG)</label><input class="ui" type="file" accept="image/png,image/jpeg" onchange="prevThumb(event)"><div id="thPrev"></div></div>
    <div class="ug"><label class="ul">URL (paste a link, video URL, or document URL)</label><input class="ui" type="url" id="uURL" placeholder="https://... (Google Drive, Loom, Vimeo, YouTube, or any URL)"></div>
@@ -935,9 +935,9 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
 
   // DIRECT UPLOAD CLICK HANDLER — avoids DOMContentLoaded wrapper timing issues
   window.tkhUploadClick = async function() {
-    var btn = document.querySelector('#pgUpload button[onclick="tkhUploadClick()"]');
+    var btn = document.querySelector('button[onclick="tkhUploadClick()"]');
     if (btn && btn.disabled) return;
-    if (btn) { btn.disabled = true; btn.textContent = 'Uploading...'; btn.style.opacity = '.65'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; btn.style.opacity = '.65'; }
     try {
       if (!window.SB || !CE) { toast('Upload unavailable. Refresh and sign in again.','error'); return; }
       var tiEl=document.getElementById('uTi'), tyEl=document.getElementById('uTy'), deEl=document.getElementById('uDe'), urlEl=document.getElementById('uURL');
@@ -1001,7 +1001,9 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
       toast('Upload failed: '+((e&&e.message)?e.message:e),'error');
       console.warn('[TKH] direct upload failed:', e);
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = 'Upload'; btn.style.opacity = '1'; }
+      // Always re-enable regardless of btn selector result
+      var _b = document.querySelector('button[onclick="tkhUploadClick()"]');
+      if (_b) { _b.disabled = false; _b.textContent = 'Upload'; _b.style.opacity = '1'; }
     }
   };
 
