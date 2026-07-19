@@ -934,75 +934,145 @@ function copyShare(url){try{var u=url||window.location.href;navigator.clipboard.
 
 
   // DIRECT UPLOAD CLICK HANDLER — avoids DOMContentLoaded wrapper timing issues
-  window.tkhUploadClick = async function() {
-    var btn = document.querySelector('button[onclick="tkhUploadClick()"]');
-    if (btn && btn.disabled) return;
-    if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; btn.style.opacity = '.65'; }
-    try {
-      if (!window.SB || !CE) { toast('Upload unavailable. Refresh and sign in again.','error'); return; }
-      var tiEl=document.getElementById('uTi'), tyEl=document.getElementById('uTy'), deEl=document.getElementById('uDe'), urlEl=document.getElementById('uURL');
-      var ti=tiEl?tiEl.value.trim():'', ty=tyEl?tyEl.value:'', de=deEl?deEl.value.trim():'', rawUrl=urlEl?urlEl.value.trim():'';
-      var contentFile=window._selectedFile || (document.getElementById('uFi') && document.getElementById('uFi').files ? document.getElementById('uFi').files[0] : null);
-      var thumbFile=window._selectedThumb || null;
-      if(!ti){toast('Title is required.','error');return;}
-      if(!ty){toast('Content type is required.','error');return;}
-      if(!de){toast('Description is required.','error');return;}
-      if(KWS.length<3){toast('Please add at least 3 keywords.','error');return;}
-      if(ty==='link'&&!rawUrl){toast('URL is required for Link uploads.','error');return;}
-      if((ty==='video'||ty==='document')&&!rawUrl&&!contentFile){toast('Choose a file or paste a URL for this content type.','error');return;}
+  window.tkhUploadClick = async function () {
+  var btn = document.querySelector('#pgUpload button[onclick="tkhUploadClick()"]');
+  if (btn && btn.disabled) return;
 
-      var creatorProfileId=team[CE]&&team[CE].sbId?team[CE].sbId:null;
-      if(!creatorProfileId){
-        var pr=await window.SB.from('profiles').select('id').eq('email',CE).single();
-        if(pr.error||!pr.data)throw new Error((pr.error&&pr.error.message)||'Creator profile not found.');
-        creatorProfileId=pr.data.id;if(!team[CE])team[CE]={};team[CE].sbId=creatorProfileId;
-      }
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Uploading...';
+    btn.style.opacity = '.65';
+  }
 
-      var fileUrl='';
-      if(ty==='link'){
-        fileUrl=rawUrl;
-      } else if(contentFile){
-        var safeName=contentFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-        var fpath='content/'+creatorProfileId+'/'+Date.now()+'-'+safeName;
-        var up=await window.SB.storage.from('tkh-uploads').upload(fpath,contentFile,{cacheControl:'3600',upsert:false,contentType:contentFile.type||'application/octet-stream'});
-        if(up.error)throw up.error;
-        var pub=window.SB.storage.from('tkh-uploads').getPublicUrl(fpath);
-        fileUrl=pub&&pub.data?pub.data.publicUrl:'';
-      } else {
-        fileUrl=rawUrl;
-      }
-
-      var thumbUrl='';
-      if(thumbFile){
-        var tSafe=thumbFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-        var tPath='thumbs/'+creatorProfileId+'/'+Date.now()+'-'+tSafe;
-        var tup=await window.SB.storage.from('tkh-uploads').upload(tPath,thumbFile,{cacheControl:'3600',upsert:false,contentType:thumbFile.type||'image/jpeg'});
-        if(tup.error)throw tup.error;
-        var tpub=window.SB.storage.from('tkh-uploads').getPublicUrl(tPath);
-        thumbUrl=tpub&&tpub.data?tpub.data.publicUrl:'';
-      }
-
-      var dbType=(ty==='link'?'document':ty);var row={creator_id:creatorProfileId,type:dbType,title:ti,description:de,category:(ty==='link'?'Link':'General'),keywords:KWS.slice(),file_url:fileUrl||'#',status:'live',view_count:0,helpful_count:0,shareable_slug:creatorProfileId.slice(0,8)+'-'+Date.now().toString(36)};
-      if(thumbUrl) row.thumbnail_url=thumbUrl;
-      var ins=await window.SB.from('content').insert(row).select('*, cr:creator_id(email)').single();
-      if(ins.error){
-        if(thumbUrl && /thumbnail_url|column/i.test(ins.error.message||'')){
-          delete row.thumbnail_url;
-          ins=await window.SB.from('content').insert(row).select('*, cr:creator_id(email)').single();
-        }
-        if(ins.error)throw ins.error;
-      }
-      await window._tkhLoadData();
-      resetUploadForm();rhome();rpLists();toast('Content uploaded and saved.');goP('profile');
-    } catch(e) {
-      toast('Upload failed: '+((e&&e.message)?e.message:e),'error');
-      console.warn('[TKH] direct upload failed:', e);
-    } finally {
-      // Always re-enable regardless of btn selector result
-      var _b = document.querySelector('button[onclick="tkhUploadClick()"]');
-      if (_b) { _b.disabled = false; _b.textContent = 'Upload'; _b.style.opacity = '1'; }
+  try {
+    if (!window.SB || !CE) {
+      toast('Upload unavailable. Refresh and sign in again.', 'error');
+      return;
     }
-  };
+
+    // Read form fields
+    var tiEl  = document.getElementById('uTi');
+    var tyEl  = document.getElementById('uTy');
+    var deEl  = document.getElementById('uDe');
+    var urlEl = document.getElementById('uURL');
+
+    var ti     = tiEl  ? tiEl.value.trim()       : '';
+    var ty     = tyEl  ? tyEl.value              : '';
+    var de     = deEl  ? deEl.value.trim()       : '';
+    var rawUrl = urlEl ? urlEl.value.trim()      : '';
+    var contentFile = window._selectedFile || (document.getElementById('uFi') && document.getElementById('uFi').files ? document.getElementById('uFi').files[0] : null);
+    var thumbFile   = window._selectedThumb || null;
+
+    // Validation (hard rules)
+    if (!ti) { toast('Title is required.', 'error'); return; }
+    if (!ty) { toast('Content type is required.', 'error'); return; }
+    if (!de) { toast('Description is required.', 'error'); return; }
+    if (KWS.length < 3) { toast('Please add at least 3 keywords.', 'error'); return; }
+
+    // Type-specific validation
+    if (ty === 'link') {
+      // Link: title + URL + description + keywords are all required
+      if (!rawUrl) { toast('URL is required for Link uploads.', 'error'); return; }
+    } else if (ty === 'video' || ty === 'document') {
+      // Tutorial/Video/Document: file OR URL (file preferred)
+      if (!rawUrl && !contentFile) {
+        toast('Choose a file or paste a URL for this content type.', 'error');
+        return;
+      }
+    }
+
+    // Find creator profile id (for Supabase content.creator_id)
+    var creatorProfileId = team[CE] && team[CE].sbId ? team[CE].sbId : null;
+    if (!creatorProfileId) {
+      var pr = await window.SB.from('profiles').select('id').eq('email', CE).single();
+      if (pr.error || !pr.data) throw new Error((pr.error && pr.error.message) || 'Creator profile not found.');
+      creatorProfileId = pr.data.id;
+      if (!team[CE]) team[CE] = {};
+      team[CE].sbId = creatorProfileId;
+    }
+
+    // Resolve main file URL
+    var fileUrl = '';
+    if (ty === 'link') {
+      // Link uses the URL directly
+      fileUrl = rawUrl;
+    } else if (contentFile) {
+      // File upload path for tutorial/video/document
+      var safeName = contentFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      var fpath    = 'content/' + creatorProfileId + '/' + Date.now() + '-' + safeName;
+      var up       = await window.SB.storage.from('tkh-uploads').upload(
+        fpath,
+        contentFile,
+        { cacheControl: '3600', upsert: false, contentType: contentFile.type || 'application/octet-stream' }
+      );
+      if (up.error) throw up.error;
+      var pub = window.SB.storage.from('tkh-uploads').getPublicUrl(fpath);
+      fileUrl = pub && pub.data ? pub.data.publicUrl : '';
+    } else {
+      // URL-only fallback for video/document
+      fileUrl = rawUrl;
+    }
+
+    // Optional thumbnail upload
+    var thumbUrl = '';
+    if (thumbFile) {
+      var tSafe = thumbFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      var tPath = 'thumbs/' + creatorProfileId + '/' + Date.now() + '-' + tSafe;
+      var tup   = await window.SB.storage.from('tkh-uploads').upload(
+        tPath,
+        thumbFile,
+        { cacheControl: '3600', upsert: false, contentType: thumbFile.type || 'image/jpeg' }
+      );
+      if (tup.error) throw tup.error;
+      var tpub = window.SB.storage.from('tkh-uploads').getPublicUrl(tPath);
+      thumbUrl = tpub && tpub.data ? tpub.data.publicUrl : '';
+    }
+
+    // Map type for DB (link rows can be stored as 'document' if that's what content_type_check expects)
+    var dbType = (ty === 'link' ? 'document' : ty);
+
+    var row = {
+      creator_id:      creatorProfileId,
+      type:            dbType,
+      title:           ti,
+      description:     de,
+      category:        (ty === 'link' ? 'Link' : 'General'),
+      keywords:        KWS.slice(),
+      file_url:        fileUrl || rawUrl || '#',
+      status:          'live',
+      view_count:      0,
+      helpful_count:   0,
+      shareable_slug:  creatorProfileId.slice(0, 8) + '-' + Date.now().toString(36)
+    };
+    if (thumbUrl) row.thumbnail_url = thumbUrl;
+
+    var ins = await window.SB.from('content')
+      .insert(row)
+      .select('*, cr:creator_id(email)')
+      .single();
+
+    if (ins.error) {
+      throw ins.error;
+    }
+
+    await window._tkhLoadData();
+    resetUploadForm();
+    rhome();
+    rpLists();
+    toast('Content uploaded and saved.');
+    goP('profile');
+
+  } catch (e) {
+    toast('Upload failed: ' + ((e && e.message) ? e.message : e), 'error');
+    console.warn('[TKH] direct upload failed:', e);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Upload';
+      btn.style.opacity = '1';
+    }
+  }
+};
 
   console.log('[TKH] Supabase integration v2.0 loaded.');
 })();
