@@ -1006,6 +1006,8 @@ window.tkhUploadClick = async function () {
       var uFNEl = document.getElementById('uFN');
       if (uFNEl) uFNEl.textContent = '';
       tkhHideOverlay();
+      if (btn) { btn.disabled = false; btn.textContent = 'Upload'; btn.style.opacity = '1'; }
+      window.open('https://drive.google.com/drive/folders/1ozyRZhzzjKmPWMkPqS01Wk-BE_igmOaU', '_blank');
       openM('mLargeFile');
       return;
     }
@@ -1122,38 +1124,43 @@ window.tkhUploadClick = async function () {
 
 <!-- TKH Large-File Popup -->
 <div class="mo hidden" id="mLargeFile">
-  <div class="mb" style="max-width:600px;max-height:85vh;overflow-y:auto">
+  <div class="mb" style="max-width:620px;max-height:88vh;overflow-y:auto;background:rgba(18,10,2,.97);border:1px solid rgba(212,168,67,.35)">
     <button class="mc2" onclick="closeM('mLargeFile')">&#x00D7;</button>
-    <div class="mh" style="color:rgba(220,80,80,.9)">Your video is too large for direct upload</div>
-    <div class="ms" style="text-align:left;line-height:1.7;font-size:13px">
-      <p>We can&rsquo;t upload this file directly because it exceeds our current <strong>50 MB limit</strong>. To add this video to Tribal Knowledge Hub, follow these steps:</p>
+    <div class="mh" style="color:rgba(220,80,80,.95);font-size:17px">Your video is too large for direct upload</div>
+    <div class="ms" style="text-align:left;line-height:1.75;font-size:13px;color:var(--pc)">
+      <p>We can&rsquo;t upload this file directly because it exceeds our current <strong style="color:var(--g2)">50 MB limit</strong>. To add this video to Tribal Knowledge Hub, follow these steps:</p>
       <br>
-      <p><strong>Step 1 &ndash; Open the TKH Uploads folder</strong><br>
-      Click <a href="https://drive.google.com/drive/folders/1ozyRZhzzjKmPWMkPqS01Wk-BE_igmOaU" target="_blank" style="color:var(--g2)">TKH Uploads folder</a> to open the shared Google Drive folder in a new tab.</p>
+      <p><strong style="color:var(--g2)">Step 1 &ndash; Open the TKH Uploads folder</strong><br>
+      Click <a href="https://drive.google.com/drive/folders/1ozyRZhzzjKmPWMkPqS01Wk-BE_igmOaU" target="_blank" rel="noopener" style="color:var(--g);text-decoration:underline">TKH Uploads folder</a> to open the shared Google Drive folder in a new tab.<br>
+      <span style="font-size:11px;color:rgba(212,168,67,.55)">(We already opened it for you in a new tab.)</span></p>
       <br>
-      <p><strong>Step 2 &ndash; Upload your video to the folder</strong><br>
+      <p><strong style="color:var(--g2)">Step 2 &ndash; Upload your video to the folder</strong><br>
       In the TKH Uploads folder:<br>
       &bull; Click the <strong>New</strong> button in the top left corner of Google Drive.<br>
       &bull; Choose <strong>File upload</strong>.<br>
       &bull; Select your video file and wait for the upload to finish.<br>
-      <em>(Note: drag and drop is not supported for this workflow; please use New &rarr; File upload.)</em></p>
+      <em style="color:rgba(242,232,213,.55)">(Note: drag and drop is not supported for this workflow; please use New &rarr; File upload.)</em></p>
       <br>
-      <p><strong>Step 3 &ndash; Get a shareable link</strong><br>
+      <p><strong style="color:var(--g2)">Step 3 &ndash; Get a shareable link</strong><br>
       After the upload completes:<br>
       &bull; Right-click your video file in the TKH Uploads folder.<br>
       &bull; Click <strong>Share &rarr; Share</strong>.<br>
       &bull; Under &ldquo;General access&rdquo;, choose <strong>Instacart</strong>.<br>
       &bull; Click <strong>Copy link</strong>.</p>
       <br>
-      <p><strong>Step 4 &ndash; Paste the link in TKH</strong><br>
+      <p><strong style="color:var(--g2)">Step 4 &ndash; Paste the link in TKH</strong><br>
       Return to this TKH upload form:<br>
       &bull; Paste the link into the <strong>URL field</strong>.<br>
       &bull; Click <strong>Upload</strong> to save your content to TKH.</p>
       <br>
-      <p style="color:rgba(212,168,67,.7);font-size:12px"><em>Note: We removed the oversized file you selected, but we kept your title, description, and keywords so you don&rsquo;t have to re-enter them.</em></p>
+      <p style="color:rgba(212,168,67,.65);font-size:12px;border-top:1px solid rgba(212,168,67,.12);padding-top:12px">
+        For step-by-step instructions with screenshots, open: <a href="https://docs.google.com/document/d/1CSE28-OXBBS7BKnho21esgMll3q2DutXZCOTfGZ6i00/edit" target="_blank" rel="noopener" style="color:var(--g);text-decoration:underline">Large File Upload Instructions</a>
+      </p>
+      <p style="color:rgba(212,168,67,.5);font-size:11px;margin-top:8px"><em>Note: We removed the oversized file you selected, but we kept your title, description, and keywords so you don&rsquo;t have to re-enter them.</em></p>
     </div>
     <div class="ma" style="flex-wrap:wrap;gap:10px;margin-top:18px">
       <button class="gbtn" onclick="window.open('https://drive.google.com/drive/folders/1ozyRZhzzjKmPWMkPqS01Wk-BE_igmOaU','_blank')">Open TKH Uploads in new tab</button>
+      <button class="gbtn" style="background:transparent;border:1px solid rgba(212,168,67,.4);color:var(--g2)" onclick="window.open('https://docs.google.com/document/d/1CSE28-OXBBS7BKnho21esgMll3q2DutXZCOTfGZ6i00/edit','_blank')">Open instructions (with screenshots)</button>
       <button class="bc" onclick="closeM('mLargeFile')">Got it</button>
     </div>
   </div>
